@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env.local
+.env.dev
+.env.prod
+.env*.local
+!.env.example
+.localstack/
+volume/
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+*.tsbuildinfo

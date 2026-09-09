@@ -1,0 +1,239 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  ecommerce-admin core infrastructure (DynamoDB, S3, IAM, SSM).
+  This template is deployed unchanged against both LocalStack (local
+  development / integration testing) and real AWS (dev / prod). Do not fork
+  this file per environment — use the Environment parameter instead. See
+  docs/LOCALSTACK.md for any behavioural differences between the two targets.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: ecommerce-admin
+    Description: Prefix applied to every resource name.
+
+  Environment:
+    Type: String
+    Default: local
+    AllowedValues:
+      - local
+      - dev
+      - prod
+    Description: Deployment target. "local" is LocalStack; dev/prod are real AWS.
+
+Conditions:
+  IsProd: !Equals [!Ref Environment, prod]
+
+Resources:
+  # ---------------------------------------------------------------------------
+  # DynamoDB
+  # ---------------------------------------------------------------------------
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ProjectName}-${Environment}-Users"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+      # Nota: sin SSESpecification a propósito. DynamoDB ya cifra en reposo
+      # por defecto en AWS real (AWS owned key, sin costo). Habilitar
+      # SSESpecification dispara una llamada a KMS (CreateKey) que
+      # LocalStack no simula salvo que se agregue 'kms' a SERVICES en
+      # docker-compose.yml — evitamos esa dependencia extra (spec sección 18).
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: !If [IsProd, true, false]
+
+  CategoriesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ProjectName}-${Environment}-Categories"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: categoryId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: categoryId
+          KeyType: HASH
+
+  ProductsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ProjectName}-${Environment}-Products"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: productId
+          AttributeType: S
+        - AttributeName: categoryId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: productId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: ByCategory
+          KeySchema:
+            - AttributeName: categoryId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  CartsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ProjectName}-${Environment}-Carts"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+
+  WishlistsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${ProjectName}-${Environment}-Wishlists"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+
+  # ---------------------------------------------------------------------------
+  # S3 (frontend static hosting target)
+  # ---------------------------------------------------------------------------
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${ProjectName}-${Environment}-frontend"
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: !If [IsProd, false, true]
+        BlockPublicPolicy: !If [IsProd, false, true]
+        IgnorePublicAcls: !If [IsProd, false, true]
+        RestrictPublicBuckets: !If [IsProd, false, true]
+
+  # ---------------------------------------------------------------------------
+  # IAM
+  #
+  # NOTE: LocalStack Community accepts and stores these resources but does not
+  # enforce the policy document against API calls made with test credentials.
+  # Treat this role as authoritative for real AWS; validate least-privilege
+  # against real AWS before go-live (see section 28 of the spec / docs/LOCALSTACK.md).
+  # ---------------------------------------------------------------------------
+  BackendExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-${Environment}-backend-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub "${ProjectName}-${Environment}-backend-policy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !GetAtt UsersTable.Arn
+                  - !GetAtt CategoriesTable.Arn
+                  - !GetAtt ProductsTable.Arn
+                  - !Sub "${ProductsTable.Arn}/index/*"
+                  - !GetAtt CartsTable.Arn
+                  - !GetAtt WishlistsTable.Arn
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt FrontendBucket.Arn
+                  - !Sub "${FrontendBucket.Arn}/*"
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParametersByPath
+                Resource:
+                  - !Sub "arn:aws:ssm:*:*:parameter/${ProjectName}/${Environment}/*"
+
+  # ---------------------------------------------------------------------------
+  # SSM Parameters
+  #
+  # Deployment scripts read these after `cloudformation deploy` to wire the
+  # resolved table/bucket names into the backend without hardcoding them.
+  # ---------------------------------------------------------------------------
+  UsersTableParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ProjectName}/${Environment}/dynamodb/users-table"
+      Type: String
+      Value: !Ref UsersTable
+
+  CategoriesTableParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ProjectName}/${Environment}/dynamodb/categories-table"
+      Type: String
+      Value: !Ref CategoriesTable
+
+  ProductsTableParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ProjectName}/${Environment}/dynamodb/products-table"
+      Type: String
+      Value: !Ref ProductsTable
+
+  CartsTableParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ProjectName}/${Environment}/dynamodb/carts-table"
+      Type: String
+      Value: !Ref CartsTable
+
+  WishlistsTableParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ProjectName}/${Environment}/dynamodb/wishlists-table"
+      Type: String
+      Value: !Ref WishlistsTable
+
+  FrontendBucketParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ProjectName}/${Environment}/s3/frontend-bucket"
+      Type: String
+      Value: !Ref FrontendBucket
+
+Outputs:
+  UsersTableName:
+    Value: !Ref UsersTable
+  CategoriesTableName:
+    Value: !Ref CategoriesTable
+  ProductsTableName:
+    Value: !Ref ProductsTable
+  CartsTableName:
+    Value: !Ref CartsTable
+  WishlistsTableName:
+    Value: !Ref WishlistsTable
+  FrontendBucketName:
+    Value: !Ref FrontendBucket
+  BackendExecutionRoleArn:
+    Value: !GetAtt BackendExecutionRole.Arn

@@ -1,0 +1,8 @@
+# Shell scripts must keep LF endings — scripts/localstack-init.sh is
+# bind-mounted directly into the (Linux) LocalStack container with no build
+# step to fix line endings, and a CRLF shebang breaks it there
+# ("bad interpreter") when checked out on Windows.
+*.sh text eol=lf
+
+# Keep the rest sane cross-platform without forcing surprises on binaries.
+* text=auto eol=lf
