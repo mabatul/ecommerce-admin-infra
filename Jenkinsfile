@@ -28,11 +28,14 @@ pipeline {
     }
 
     stage('Health check') {
-      // This step runs INSIDE the Jenkins container (Docker-outside-of-
-      // Docker) — "localhost" here is Jenkins' own container, not the host
-      // where the published ports actually are.
+      // Checks only what this pipeline itself brought up (LocalStack
+      // always; backend only if the smoke test actually ran — see
+      // ci-deploy-local.sh). Not scripts/health-check.sh: that one assumes
+      // backend/frontend are on your own machine's localhost, which isn't
+      // true inside this container (Docker-outside-of-Docker) or when the
+      // sibling repos aren't part of this job's isolated workspace.
       environment { HEALTH_CHECK_HOST = 'host.docker.internal' }
-      steps { sh './scripts/health-check.sh' }
+      steps { sh './scripts/ci-deploy-local.sh health' }
     }
 
     // Placeholder: deploy to real AWS (prod). Needs credentials/account

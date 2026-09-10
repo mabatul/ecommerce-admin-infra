@@ -83,11 +83,43 @@ smoke_test_backend() {
   done
 }
 
+health_check() {
+  # Checks only what THIS script actually brought up — not
+  # scripts/health-check.sh's job (that one is for a developer's own
+  # machine, where backend/frontend are reliably reachable on localhost;
+  # here, from inside Jenkins, "localhost" means Jenkins' own container,
+  # and backend/frontend may not have been started at all if the sibling
+  # folders weren't available — see smoke_test_backend above).
+  local host="${HEALTH_CHECK_HOST:-localhost}"
+  local fail=0
+
+  if docker exec "${PREFIX}-localstack" curl -sf http://localhost:4566/_localstack/health >/dev/null 2>&1; then
+    echo "  [OK]   LocalStack"
+  else
+    echo "  [FAIL] LocalStack"
+    fail=1
+  fi
+
+  if docker ps --format '{{.Names}}' | grep -qx "${PREFIX}-backend"; then
+    if curl -sf "http://${host}:4000/api/health" >/dev/null 2>&1; then
+      echo "  [OK]   Backend (smoke test)"
+    else
+      echo "  [FAIL] Backend (smoke test)"
+      fail=1
+    fi
+  else
+    echo "  [SKIP] Backend (smoke test wasn't run — see above)"
+  fi
+
+  [ "$fail" -eq 0 ]
+}
+
 case "${1:-infra}" in
   infra) deploy_infra ;;
   smoke) deploy_infra; smoke_test_backend ;;
+  health) health_check ;;
   *)
-    echo "usage: $0 {infra|smoke}" >&2
+    echo "usage: $0 {infra|smoke|health}" >&2
     exit 1
     ;;
 esac
