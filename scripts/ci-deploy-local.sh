@@ -114,7 +114,19 @@ health_check() {
   [ "$fail" -eq 0 ]
 }
 
-case "${1:-infra}" in
+CMD="${1:-infra}"
+
+# Every subcommand below needs a real Docker daemon (builds/runs
+# containers). On a Jenkins agent with none available (e.g. the
+# Railway-hosted Jenkins, see jenkins-cloud/) that's expected, not an
+# error — exit 0 so the pipeline stage shows as passed-but-skipped in the
+# log rather than failing the build.
+if ! command -v docker >/dev/null 2>&1; then
+  echo "[ci-deploy-local] no Docker daemon available here — skipping '${CMD}' (expected on a Docker-less Jenkins agent)."
+  exit 0
+fi
+
+case "$CMD" in
   infra) deploy_infra ;;
   smoke) deploy_infra; smoke_test_backend ;;
   health) health_check ;;

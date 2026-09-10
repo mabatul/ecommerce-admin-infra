@@ -71,9 +71,7 @@ concerns, not runtime orchestration.
 - Documentation (README, docs/*) and code comments: **English**, even
   though conversations about this project may happen in Spanish.
 - Commit messages: plain-language summaries of what changed (not
-  Conventional Commits prefixes like `feat:`/`chore:`), and they carry a
-  `Co-Authored-By: Claude ...` trailer when Claude Code made the change —
-  that trailer stays; it's a transparency requirement, not a style choice.
+  Conventional Commits prefixes like `feat:`/`chore:`).
 - Don't fabricate commit timestamps/history to make automated work look
   like it happened incrementally over time it didn't.
 

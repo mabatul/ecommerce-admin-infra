@@ -1,9 +1,20 @@
 // Pipeline for THIS repo only (infra). Doesn't build or deploy
-// backend/frontend — only validates the infrastructure and, if the sibling
-// folders exist, runs an end-to-end smoke test against it. Each repo
-// (backend, frontend) has its own Jenkinsfile with its own Railway deploy —
-// see jenkins/README.md for how they're registered as independent jobs on
-// the same local Jenkins instance.
+// backend/frontend — only validates the infrastructure and, if Docker is
+// available, runs an end-to-end smoke test against a real LocalStack.
+// Each repo (backend, frontend) has its own Jenkinsfile with its own
+// Railway deploy — see jenkins/README.md (local) for how they're
+// registered as independent jobs.
+//
+// The smoke-test stages need a real Docker daemon (they build and run
+// LocalStack + backend containers) — that's only true on the LOCAL
+// Jenkins (Docker-outside-of-Docker, see jenkins/README.md). On the
+// Railway-hosted Jenkins (see jenkins-cloud/) there's no Docker daemon
+// available; ci-deploy-local.sh itself checks for `docker` and exits 0
+// without doing anything if it's missing, so those stages show as passed
+// (with a "skipping" line in their log) instead of failing — only
+// cfn-lint actually runs there. (Tried gating this with the stages'
+// `when { expression { sh(...) == 0 } } }` first — that didn't reliably
+// skip the stage, so the check lives in the script itself instead.)
 pipeline {
   agent any
 
@@ -50,7 +61,11 @@ pipeline {
 
   post {
     failure {
-      sh './scripts/ci-teardown.sh'
+      sh '''
+        if command -v docker >/dev/null 2>&1; then
+          ./scripts/ci-teardown.sh
+        fi
+      '''
     }
   }
 }
