@@ -25,10 +25,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY plugins.txt /usr/share/jenkins/ref/plugins.txt
 RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt
 
-# Skips the setup wizard entirely — this Jenkins starts with no login at
-# all. That's fine for local-only development (see jenkins/README.md) but
-# NOT how to run a Jenkins that's reachable from outside your machine.
-ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false"
+# - runSetupWizard=false: skips the setup wizard entirely, this Jenkins
+#   starts with no login at all. Fine for local-only dev (see
+#   jenkins/README.md), NOT how to run a Jenkins reachable from outside
+#   your machine.
+# - GitSCM.ALLOW_LOCAL_CHECKOUT=true: the Git plugin refuses file:// remotes
+#   by default (treats them as a path-traversal risk). Our jobs point at
+#   file:///home/jenkins/source-* on purpose (see docker-compose.jenkins.yml)
+#   since these repos aren't pushed anywhere yet — safe here because it's
+#   this same container's own read-only mounts, not an arbitrary path an
+#   untrusted Jenkinsfile author could control.
+ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false -Dhudson.plugins.git.GitSCM.ALLOW_LOCAL_CHECKOUT=true"
 
 # Runs as root so it can use the host's Docker socket without having to
 # match GIDs between the host (Windows, no unix GIDs) and the container.
