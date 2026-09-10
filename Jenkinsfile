@@ -28,6 +28,10 @@ pipeline {
     }
 
     stage('Health check') {
+      // This step runs INSIDE the Jenkins container (Docker-outside-of-
+      // Docker) — "localhost" here is Jenkins' own container, not the host
+      // where the published ports actually are.
+      environment { HEALTH_CHECK_HOST = 'host.docker.internal' }
       steps { sh './scripts/health-check.sh' }
     }
 
