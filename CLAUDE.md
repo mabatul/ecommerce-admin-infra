@@ -9,20 +9,36 @@ the ecommerce-admin project:
 
 - **ecommerce-admin-infra** (this repo) — infrastructure only. No
   application code. Defines the CloudFormation template (DynamoDB, S3, IAM,
-  SSM), the LocalStack setup, the local dev `docker-compose.yml` that
-  orchestrates all three services, deployment scripts, and Jenkins.
+  SSM), the LocalStack setup (`docker-compose.yml`, LocalStack only),
+  deployment scripts, and Jenkins.
 - **ecommerce-admin-backend** — Next.js API. Lives in a sibling folder,
-  `../ecommerce-admin-backend`.
+  `../ecommerce-admin-backend`. Starts on its own, with its own
+  `docker-compose.yml`.
 - **ecommerce-admin-frontend** — Next.js dashboard. Lives in a sibling
-  folder, `../ecommerce-admin-frontend`.
+  folder, `../ecommerce-admin-frontend`. Same — starts on its own.
 
-They're meant to be cloned as sibling directories. This repo's
-`docker-compose.yml` and `docker-compose.jenkins.yml` reference
-`../ecommerce-admin-backend` and `../ecommerce-admin-frontend` by relative
-path (overridable via `BACKEND_PATH`/`FRONTEND_PATH`).
+They're meant to be cloned as sibling directories, but this repo's
+`docker-compose.yml` does **not** build or reference the other two — it
+only brings up LocalStack. `docker-compose.jenkins.yml` still mounts the
+sibling repos (read-only, for the Jenkins jobs), and
+`scripts/ci-deploy-local.sh` still references
+`../ecommerce-admin-backend` for its optional CI smoke test — those are the
+only two places this repo knows the siblings exist, and both are CI/tooling
+concerns, not runtime orchestration.
 
 ## Key design decisions (don't undo these without a reason)
 
+- **Each repo starts independently.** `docker compose up` in this repo
+  brings up LocalStack only. Backend and frontend are started separately,
+  from their own repos, each with its own `docker-compose.yml`. Backend
+  reaches LocalStack via `host.docker.internal:4566` (LocalStack publishes
+  4566 to the host, so any container can reach it that way, without a
+  shared Docker network or this repo needing to build backend's image).
+  `scripts/seed-local.sh` reaches the backend container by name
+  (`docker exec ecommerce-admin-backend ...`), not via `docker compose
+  exec`, for the same reason. Don't reintroduce `backend`/`frontend`
+  services into this repo's `docker-compose.yml` — that's exactly the
+  coupling this split was meant to remove.
 - **One CloudFormation template, no forking per environment.** The same
   `infrastructure/cloudformation/main.yaml` deploys to LocalStack (`local`)
   and real AWS (`prod`), parameterized by `Environment`. If LocalStack can't

@@ -45,7 +45,9 @@ No AWS CLI or AWS account needed for local development.
 
 ## Bringing up the full local environment
 
-Clone the 3 repos as sibling folders:
+Each repo starts **independently** — this repo doesn't build or start
+backend/frontend, and they don't know how infra is built. Clone the 3 repos
+as sibling folders:
 
 ```bash
 git clone <infra-url> ecommerce-admin-infra
@@ -53,34 +55,51 @@ git clone <backend-url> ecommerce-admin-backend
 git clone <frontend-url> ecommerce-admin-frontend
 ```
 
-Then, from `ecommerce-admin-infra`:
+**1. Infrastructure first**, from `ecommerce-admin-infra`:
 
 ```bash
 cp .env.example .env.local
 docker compose up
 ```
 
-Brings up LocalStack (deploys the CloudFormation stack on its own, via the
-`ready.d` hook), then backend and frontend, built from the sibling folders.
-Once it's up:
+Brings up LocalStack and deploys the CloudFormation stack on its own (via
+the `ready.d` hook) — nothing else. Once
+[http://localhost:4566/_localstack/health](http://localhost:4566/_localstack/health)
+responds, the infrastructure is ready.
 
-- Dashboard: http://localhost:3000
-- Backend: http://localhost:4000/api/health
-- LocalStack: http://localhost:4566/_localstack/health
+**2. Backend**, independently, from `ecommerce-admin-backend`:
 
-Load sample data:
+```bash
+docker compose up
+```
+
+Reaches LocalStack via `host.docker.internal:4566` (see that repo's
+README). Once up: http://localhost:4000/api/health.
+
+**3. Frontend**, independently, from `ecommerce-admin-frontend`:
+
+```bash
+docker compose up
+```
+
+Once up: http://localhost:3000.
+
+**4. Load sample data**, back in `ecommerce-admin-infra` (needs the backend
+container from step 2 running):
 
 ```bash
 ./scripts/seed-local.sh
 ```
 
-Everything in one step:
+**Shortcut for step 1** (start LocalStack + wait for the stack, nothing
+more — steps 2-4 are still separate, on purpose):
 
 ```bash
 ./scripts/deploy-local.sh
 ```
 
-Verify everything is responding:
+Verify everything is responding (checks all three, wherever they were
+started from):
 
 ```bash
 ./scripts/health-check.sh
@@ -123,7 +142,7 @@ which creates them directly via AWS CLI/SDK. Step-by-step guide:
 ```
 infrastructure/cloudformation/main.yaml   Shared template (local/prod)
 docker/Dockerfile.localstack               LocalStack with the stack baked in
-docker-compose.yml                          Orchestrates LocalStack + backend + frontend
+docker-compose.yml                          LocalStack only — nothing else
 scripts/                                    Deployment, seed, health-check
 jenkins/                                    Local Jenkins (one job per repo)
 docs/LOCALSTACK.md                          LocalStack parity per service

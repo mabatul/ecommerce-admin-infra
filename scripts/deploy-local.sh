@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
-# One-shot local bring-up (spec section 23):
+# One-shot bring-up of the INFRASTRUCTURE ONLY:
 #   docker compose up -> LocalStack starts -> CloudFormation deployed
-#   -> tables/buckets created -> seed data inserted -> backend/frontend start
+#   -> tables/buckets created
 #
-# Infrastructure deployment happens automatically via the LocalStack ready.d
-# hook (scripts/localstack-init.sh); this script waits for that, then seeds
-# and brings the rest of the stack up. For a from-scratch run this is what
-# `docker compose up` alone does not give you (seed data) — see README.md.
+# Deployment happens automatically via the LocalStack ready.d hook
+# (scripts/localstack-init.sh); this script just waits for it to finish so
+# you know it's safe to start backend/frontend next.
+#
+# This repo doesn't start backend/frontend — do that from their own repos,
+# independently, once this script says the stack is ready. Then run
+# scripts/seed-local.sh from here once the backend is up.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 export ENVIRONMENT=local
@@ -28,17 +31,8 @@ until docker compose exec -T localstack awslocal cloudformation describe-stacks 
   sleep 2
 done
 
-echo "[deploy-local] starting backend + frontend..."
-docker compose up -d --build backend frontend
-
-echo "[deploy-local] waiting for backend to be ready..."
-until docker compose exec -T backend curl -sf http://localhost:4000/api/health >/dev/null 2>&1; do
-  sleep 2
-done
-
-./scripts/seed-local.sh
-./scripts/health-check.sh
-
-echo "[deploy-local] ready:"
-echo "  frontend -> http://localhost:${FRONTEND_PORT:-3000}"
-echo "  backend  -> http://localhost:${BACKEND_PORT:-4000}/api/health"
+echo "[deploy-local] infrastructure ready:"
+echo "  LocalStack -> http://localhost:4566/_localstack/health"
+echo ""
+echo "Next: start ecommerce-admin-backend (its own 'docker compose up'), then"
+echo "ecommerce-admin-frontend, then run ./scripts/seed-local.sh from here."
