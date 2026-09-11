@@ -13,8 +13,9 @@ machine).
 | Login | none, on purpose | real user/password |
 | Docker | yes (Docker-outside-of-Docker) | no |
 | Jobs point at | `file:///home/jenkins/source-*` (your local checkout) | the real GitHub repos |
-| infra job's smoke test | runs for real (builds/runs LocalStack) | skipped — only `cfn-lint` runs (see the Jenkinsfiles: `when { expression { sh(...) == 0 } }` checks for `docker` and skips if absent) |
-| backend/frontend jobs | same as cloud | build, lint, deploy to Railway — unaffected by the missing Docker, since Railway builds the deploy image itself |
+| Job type | plain Pipeline, single branch (whatever's checked out locally) | Multibranch — every branch in the repo gets its own sub-job, built automatically on push |
+| infra job's smoke test | runs for real (builds/runs LocalStack) | skipped — only `cfn-lint` runs (see the Jenkinsfiles: the Docker check lives in `scripts/ci-deploy-local.sh` itself and exits 0 if `docker` isn't found) |
+| backend/frontend jobs | same as cloud, but deploy manually via "Build Now" | build, lint, deploy — deploy to Railway only fires on `main` (`when { branch 'main' }`), other branches stop after the smoke test |
 
 ## 1. Create the service on Railway
 
@@ -57,9 +58,32 @@ it should ask for login.
 
 The 3 jobs (`ecommerce-admin-infra`, `-backend`, `-frontend`) are created
 automatically on first boot by `init.groovy.d/jobs.groovy`, pointed at the
-real GitHub repos. Nothing to configure by hand.
+real GitHub repos, as **Multibranch Pipelines** — nothing to configure by
+hand. Each branch that exists in a repo gets built (lint/build/smoke test);
+only `main` actually deploys, in the backend/frontend jobs.
 
-## 5. Configure the Railway deploy credentials (for backend/frontend jobs)
+## 5. Configure the GitHub webhooks (so pushes trigger builds automatically)
+
+Without this, new/changed branches are only picked up once a day (the
+`PeriodicFolderTrigger` fallback in `jobs.groovy`). For each of the 3
+repos, add a webhook:
+
+**GitHub repo → Settings → Webhooks → Add webhook**
+
+| Field | Value |
+|---|---|
+| Payload URL | `<your Jenkins domain>/git/notifyCommit?url=<the repo's .git URL>` |
+| Content type | `application/json` |
+| Events | Just the push event |
+
+Example for the backend repo, once your Jenkins domain is known:
+`https://ecommerce-admin-infra-production.up.railway.app/git/notifyCommit?url=https://github.com/mabatul/ecommerce-admin-backend.git`
+
+This hits the plain git plugin's `/git/notifyCommit` endpoint (no extra
+plugin needed) — it re-scans the matching Multibranch job for
+new/removed/updated branches as soon as GitHub calls it.
+
+## 6. Configure the Railway deploy credentials (for backend/frontend jobs)
 
 Same as the local Jenkins — see
 `../ecommerce-admin-backend/README.md` / `../ecommerce-admin-frontend/README.md`,

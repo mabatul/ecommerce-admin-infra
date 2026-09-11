@@ -5,6 +5,13 @@
 // Railway deploy — see jenkins/README.md (local) for how they're
 // registered as independent jobs.
 //
+// Runs as a Multibranch Pipeline on the cloud Jenkins (see
+// jenkins-cloud/init.groovy.d/jobs.groovy) — cfn-lint and the smoke test
+// run on every branch, which is the point: it validates a CloudFormation
+// change before it ever reaches main. There's no deploy stage here to gate
+// with `when { branch 'main' }` yet (see the disabled AWS placeholder
+// below) — add that gate there once it's a real deploy.
+//
 // The smoke-test stages need a real Docker daemon (they build and run
 // LocalStack + backend containers) — that's only true on the LOCAL
 // Jenkins (Docker-outside-of-Docker, see jenkins/README.md). On the
