@@ -105,9 +105,18 @@ started from):
 ./scripts/health-check.sh
 ```
 
-## CI/CD: Jenkins locally, one job per repo
+## CI/CD
 
-See [`jenkins/README.md`](jenkins/README.md) — a single local Jenkins
+**Real CI** (what actually runs on every push): GitHub Actions,
+`.github/workflows/ci.yml` in each of the 3 repos — validates the
+CloudFormation template and smoke-tests it against a real LocalStack. Free
+and unlimited for public repos, with far more resources than a shared
+Jenkins on Railway's free tier could ever offer (verified the hard way —
+see [`jenkins-cloud/README.md`](jenkins-cloud/README.md)).
+
+**Local Jenkins** (optional, for whoever wants to see the pipelines run
+somewhere with a UI, on your own machine): see
+[`jenkins/README.md`](jenkins/README.md) — a single local Jenkins
 instance, but with an independent job per repo (each reading its own
 `Jenkinsfile`), so each service builds/tests/deploys on its own instead of
 through one shared pipeline.
@@ -144,7 +153,9 @@ infrastructure/cloudformation/main.yaml   Shared template (local/prod)
 docker/Dockerfile.localstack               LocalStack with the stack baked in
 docker-compose.yml                          LocalStack only — nothing else
 scripts/                                    Deployment, seed, health-check
-jenkins/                                    Local Jenkins (one job per repo)
+.github/workflows/ci.yml                    Real CI: cfn-lint + LocalStack smoke test
+jenkins/                                    Local Jenkins (one job per repo, optional)
+jenkins-cloud/                              Parked — see its README
 docs/LOCALSTACK.md                          LocalStack parity per service
 docs/RAILWAY.md                             DynamoDB Local on Railway, step by step
 ```

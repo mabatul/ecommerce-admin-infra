@@ -35,4 +35,10 @@ def strategy = new FullControlOnceLoggedInAuthorizationStrategy()
 strategy.setAllowAnonymousRead(false)
 instance.setAuthorizationStrategy(strategy)
 
+// This instance runs on Railway's free tier (512MB) — two builds' worth
+// of `npm ci`/git at once was enough to OOM-kill the whole container
+// (verified live). One executor forces every build across all 3 jobs to
+// run strictly one at a time.
+instance.setNumExecutors(1)
+
 instance.save()

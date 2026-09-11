@@ -1,0 +1,45 @@
+name: CI
+
+# Runs on every push/PR to any branch: validates the CloudFormation
+# template and, since GitHub's runners come with Docker preinstalled and
+# far more headroom (2 vCPU / 7GB RAM) than the cloud Jenkins ever had,
+# runs a real smoke test against LocalStack too — more than the
+# Railway-hosted Jenkins could ever do there (see jenkins-cloud/README.md
+# for why that instance is parked: even this repo alone OOM-killed it on
+# Railway's free tier, before touching backend/frontend at all).
+#
+# This repo's own backend/frontend siblings aren't checked out here, so
+# scripts/ci-deploy-local.sh's backend smoke test step skips itself
+# (same behavior it already had for the cloud Jenkins) — this workflow
+# only proves the infrastructure itself deploys cleanly.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_NAME: ecommerce-admin
+      AWS_REGION: us-east-1
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - run: pip install cfn-lint
+      - run: cfn-lint infrastructure/cloudformation/main.yaml
+
+      - name: Deploy to LocalStack (smoke test)
+        run: ./scripts/ci-deploy-local.sh smoke
+
+      - name: Health check
+        run: ./scripts/ci-deploy-local.sh health
+
+      - name: Tear down
+        if: always()
+        run: ./scripts/ci-teardown.sh

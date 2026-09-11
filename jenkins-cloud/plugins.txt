@@ -1,6 +1,5 @@
 git:latest
 workflow-aggregator:latest
-blueocean:latest
 credentials-binding:latest
 timestamper:latest
 ws-cleanup:latest
