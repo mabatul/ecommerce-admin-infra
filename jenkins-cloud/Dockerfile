@@ -31,7 +31,15 @@ COPY init.groovy.d/ /usr/share/jenkins/ref/init.groovy.d/
 # sets up real auth instead (see that file). JENKINS_ADMIN_USER/
 # JENKINS_ADMIN_PASSWORD are read by that script from the environment
 # (set them as Railway variables, never hardcoded here).
-ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false"
+#
+# hudson.plugins.git.GitStatus.NOTIFY_COMMIT_ACCESS_CONTROL=disabled-for-polling:
+# lets GitHub's webhook call /git/notifyCommit anonymously to trigger a
+# branch re-scan (that's all it needs to do), while still refusing any
+# unauthenticated request that tries to force an immediate build via a
+# `sha1` param — that part still needs a real login/token. Everything
+# else in this Jenkins stays fully locked down (see basic-security.groovy);
+# this is a narrow, documented carve-out for exactly this endpoint.
+ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false -Dhudson.plugins.git.GitStatus.NOTIFY_COMMIT_ACCESS_CONTROL=disabled-for-polling"
 
 # entrypoint-check.sh refuses to start Jenkins at all if those two
 # variables aren't set — checked BEFORE Jenkins boots, not via the
