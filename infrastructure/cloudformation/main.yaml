@@ -39,11 +39,11 @@ Resources:
       KeySchema:
         - AttributeName: userId
           KeyType: HASH
-      # Nota: sin SSESpecification a propósito. DynamoDB ya cifra en reposo
-      # por defecto en AWS real (AWS owned key, sin costo). Habilitar
-      # SSESpecification dispara una llamada a KMS (CreateKey) que
-      # LocalStack no simula salvo que se agregue 'kms' a SERVICES en
-      # docker-compose.yml — evitamos esa dependencia extra (spec sección 18).
+      # Note: no SSESpecification on purpose. DynamoDB already encrypts at
+      # rest by default on real AWS (AWS owned key, no cost). Enabling
+      # SSESpecification triggers a KMS call (CreateKey) that LocalStack
+      # doesn't simulate unless 'kms' is added to SERVICES in
+      # docker-compose.yml — we avoid that extra dependency (spec section 18).
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: !If [IsProd, true, false]
 
