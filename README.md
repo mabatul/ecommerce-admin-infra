@@ -13,23 +13,9 @@ other two repos connect to each other.
 | [ecommerce-admin-backend](../ecommerce-admin-backend) | Next.js API. Reads/writes the DynamoDB tables defined here via environment variables — no infrastructure config hardcoded |
 | [ecommerce-admin-frontend](../ecommerce-admin-frontend) | Next.js dashboard. Consumes the backend's API over HTTP; never talks to AWS/LocalStack directly |
 
-```
-┌─────────────────────┐      HTTP       ┌─────────────────────┐
-│ ecommerce-admin-     │ ───────────────▶│ ecommerce-admin-     │
-│ frontend             │                  │ backend               │
-│ (dashboard)          │◀─────────────────│ (API)                 │
-└─────────────────────┘                  └───────────┬───────────┘
-                                                       │ AWS SDK
-                                                       │ (AWS_ENDPOINT_URL)
-                                          ┌────────────▼────────────┐
-                                          │ DynamoDB / S3 / IAM / SSM │
-                                          │ (this repo: infra)        │
-                                          │  local  -> LocalStack     │
-                                          │  dev    -> Railway        │
-                                          │           (DynamoDB Local)│
-                                          │  prod   -> real AWS       │
-                                          └───────────────────────────┘
-```
+![Architecture diagram](docs/architecture.png)
+
+*(Editable source: [`docs/architecture.drawio`](docs/architecture.drawio) — open it at [app.diagrams.net](https://app.diagrams.net).)*
 
 The backend never knows whether it's talking to LocalStack, DynamoDB Local
 on Railway, or real AWS — it's all driven by a single environment variable,
@@ -162,6 +148,8 @@ scripts/                                    Deployment, seed, health-check
 .github/workflows/ci.yml                    Real CI: cfn-lint + LocalStack smoke test
 docs/LOCALSTACK.md                          LocalStack parity per service
 docs/RAILWAY.md                             DynamoDB Local on Railway, step by step
+docs/architecture.drawio                    Architecture diagram, editable source
+docs/architecture.png                       Architecture diagram, exported image
 ```
 
 See also [`infrastructure/README.md`](infrastructure/README.md) for the
