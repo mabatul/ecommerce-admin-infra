@@ -1,17 +1,8 @@
 name: CI
 
-# Runs on every push/PR to any branch: validates the CloudFormation
-# template and, since GitHub's runners come with Docker preinstalled and
-# far more headroom (2 vCPU / 7GB RAM) than the cloud Jenkins ever had,
-# runs a real smoke test against LocalStack too — more than the
-# Railway-hosted Jenkins could ever do there (see jenkins-cloud/README.md
-# for why that instance is parked: even this repo alone OOM-killed it on
-# Railway's free tier, before touching backend/frontend at all).
-#
-# This repo's own backend/frontend siblings aren't checked out here, so
-# scripts/ci-deploy-local.sh's backend smoke test step skips itself
-# (same behavior it already had for the cloud Jenkins) — this workflow
-# only proves the infrastructure itself deploys cleanly.
+# Validates the CloudFormation template and smoke-tests it against a real
+# LocalStack (GitHub's runners have Docker preinstalled). Replaces the
+# cloud Jenkins — see jenkins-cloud/README.md.
 on:
   push:
     branches: ['**']

@@ -1,12 +1,7 @@
 #!/usr/bin/env bash
-# Creates the DynamoDB tables for the `dev` environment (Railway) directly
-# via AWS CLI, no CloudFormation — DynamoDB Local (the image running on
-# Railway, see docs/RAILWAY.md) has no CloudFormation/IAM/SSM engine, it
-# only simulates the DynamoDB API. Uses the same schema and naming
-# convention (${PROJECT_NAME}-${ENVIRONMENT}-<Entity>) as
-# infrastructure/cloudformation/main.yaml, so
-# ecommerce-admin-backend/lib/aws/config.ts doesn't need to know the
-# difference.
+# Creates the `dev` DynamoDB tables directly via AWS CLI (DynamoDB Local
+# on Railway has no CloudFormation engine) — same naming convention as
+# infrastructure/cloudformation/main.yaml.
 #
 # Usage:
 #   AWS_ENDPOINT_URL=https://<your-dynamodb-service>.railway.app \

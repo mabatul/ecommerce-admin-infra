@@ -1,17 +1,7 @@
 #!/usr/bin/env bash
-# Infrastructure smoke test for THIS repo's Jenkins pipeline
-# (infra/Jenkinsfile): brings up LocalStack with the real stack and, if the
-# sibling backend/frontend folders exist, builds and runs them against that
-# infrastructure — same pattern ecommerce-admin-backend/Jenkinsfile and
-# ecommerce-admin-frontend/Jenkinsfile use for their own smoke tests, but
-# here the focus is validating that the infrastructure itself works end to
-# end.
-#
-# Uses plain `docker` (build/run/network) instead of `docker compose`: this
-# repo's Jenkins talks to the HOST's Docker via the mounted socket
-# (Docker-outside-of-Docker, see jenkins/README.md), and there relative
-# bind-mounts don't resolve correctly — that's why it builds images that
-# bake the code in (COPY) instead of mounting it.
+# Infra smoke test: brings up LocalStack, and the backend too if its
+# sibling folder exists. Uses plain `docker` (not compose) since Jenkins'
+# Docker-outside-of-Docker setup can't resolve relative bind-mounts.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
@@ -84,12 +74,7 @@ smoke_test_backend() {
 }
 
 health_check() {
-  # Checks only what THIS script actually brought up — not
-  # scripts/health-check.sh's job (that one is for a developer's own
-  # machine, where backend/frontend are reliably reachable on localhost;
-  # here, from inside Jenkins, "localhost" means Jenkins' own container,
-  # and backend/frontend may not have been started at all if the sibling
-  # folders weren't available — see smoke_test_backend above).
+  # Checks only what this script itself started (not scripts/health-check.sh).
   local host="${HEALTH_CHECK_HOST:-localhost}"
   local fail=0
 
@@ -116,11 +101,7 @@ health_check() {
 
 CMD="${1:-infra}"
 
-# Every subcommand below needs a real Docker daemon (builds/runs
-# containers). On a Jenkins agent with none available (e.g. the
-# Railway-hosted Jenkins, see jenkins-cloud/) that's expected, not an
-# error — exit 0 so the pipeline stage shows as passed-but-skipped in the
-# log rather than failing the build.
+# No Docker daemon (e.g. cloud Jenkins) is expected, not an error.
 if ! command -v docker >/dev/null 2>&1; then
   echo "[ci-deploy-local] no Docker daemon available here — skipping '${CMD}' (expected on a Docker-less Jenkins agent)."
   exit 0

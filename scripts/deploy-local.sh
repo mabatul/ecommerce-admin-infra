@@ -1,15 +1,6 @@
 #!/usr/bin/env bash
-# One-shot bring-up of the INFRASTRUCTURE ONLY:
-#   docker compose up -> LocalStack starts -> CloudFormation deployed
-#   -> tables/buckets created
-#
-# Deployment happens automatically via the LocalStack ready.d hook
-# (scripts/localstack-init.sh); this script just waits for it to finish so
-# you know it's safe to start backend/frontend next.
-#
-# This repo doesn't start backend/frontend — do that from their own repos,
-# independently, once this script says the stack is ready. Then run
-# scripts/seed-local.sh from here once the backend is up.
+# Brings up LocalStack + the CloudFormation stack. Infra only — start
+# backend/frontend separately from their own repos.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 export ENVIRONMENT=local

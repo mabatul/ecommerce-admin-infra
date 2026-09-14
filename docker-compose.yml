@@ -1,11 +1,5 @@
-# Brings up ONLY the infrastructure: LocalStack, with the CloudFormation
-# stack deployed automatically once it's ready (see scripts/localstack-init.sh).
-#
-# This repo does NOT build or start backend/frontend — each of those has
-# its own docker-compose.yml and starts independently, connecting back to
-# this LocalStack instance over the host (see each repo's README). That's
-# on purpose: infra doesn't need to know backend/frontend exist, and
-# backend/frontend don't need to know how infra is built.
+# LocalStack only — backend/frontend each have their own docker-compose.yml
+# and connect back to this instance independently.
 services:
   localstack:
     image: localstack/localstack:3.8

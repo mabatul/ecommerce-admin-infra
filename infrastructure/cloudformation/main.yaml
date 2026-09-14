@@ -39,11 +39,8 @@ Resources:
       KeySchema:
         - AttributeName: userId
           KeyType: HASH
-      # Note: no SSESpecification on purpose. DynamoDB already encrypts at
-      # rest by default on real AWS (AWS owned key, no cost). Enabling
-      # SSESpecification triggers a KMS call (CreateKey) that LocalStack
-      # doesn't simulate unless 'kms' is added to SERVICES in
-      # docker-compose.yml — we avoid that extra dependency (spec section 18).
+      # No SSESpecification on purpose — avoids a KMS dependency LocalStack
+      # doesn't simulate by default; AWS already encrypts at rest anyway.
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: !If [IsProd, true, false]
 
@@ -121,12 +118,7 @@ Resources:
         RestrictPublicBuckets: !If [IsProd, false, true]
 
   # ---------------------------------------------------------------------------
-  # IAM
-  #
-  # NOTE: LocalStack Community accepts and stores these resources but does not
-  # enforce the policy document against API calls made with test credentials.
-  # Treat this role as authoritative for real AWS; validate least-privilege
-  # against real AWS before go-live (see section 28 of the spec / docs/LOCALSTACK.md).
+  # IAM — LocalStack doesn't enforce this policy, only real AWS does.
   # ---------------------------------------------------------------------------
   BackendExecutionRole:
     Type: AWS::IAM::Role

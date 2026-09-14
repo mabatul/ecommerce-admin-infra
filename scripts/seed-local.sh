@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
-# Populates sample Users/Products/Categories/Carts/Wishlists.
-# Runs `npm run seed` inside the already-running backend container — by
-# container name (plain `docker exec`), not `docker compose exec`, since
-# the backend is started independently by ecommerce-admin-backend's own
-# docker-compose.yml, not by this repo's.
+# Runs `npm run seed` inside the already-running backend container (by name).
 set -euo pipefail
 
 CONTAINER="${BACKEND_CONTAINER:-ecommerce-admin-backend}"
