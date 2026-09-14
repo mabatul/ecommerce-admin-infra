@@ -29,8 +29,8 @@ ENVIRONMENT=dev PROJECT_NAME=ecommerce-admin \
 ```
 
 It's idempotent — running it again doesn't fail if the tables already
-exist. `ecommerce-admin-backend/Jenkinsfile` can call it as part of the
-`dev` deploy.
+exist. Run it once by hand after creating the service; the CI/CD workflows
+don't call it automatically.
 
 ## 3. Configure the backend
 
