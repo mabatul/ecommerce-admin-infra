@@ -107,9 +107,25 @@ started from):
 
 ## CI/CD
 
-GitHub Actions, `.github/workflows/ci.yml` in each of the 3 repos —
-validates the CloudFormation template and smoke-tests it against a real
-LocalStack. Free and unlimited for public repos.
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push, on any
+branch, and on every pull request into `main`. Single job, `validate`:
+
+1. Lints `infrastructure/cloudformation/main.yaml` with `cfn-lint`.
+2. Smoke-tests it for real: `scripts/ci-deploy-local.sh smoke` builds and
+   runs LocalStack in a container (GitHub's runners have Docker
+   preinstalled) and deploys the CloudFormation stack against it — the same
+   deploy path `local` uses, not a dry run.
+3. `scripts/ci-deploy-local.sh health` checks that LocalStack (and the
+   backend too, if that sibling repo happens to be checked out alongside
+   this one) responded correctly.
+4. `scripts/ci-teardown.sh` always runs afterward (`if: always()`), so a
+   failed run doesn't leave containers behind.
+
+This repo has nothing to deploy anywhere — it's infrastructure-as-code, not
+a running service — so, unlike backend/frontend, there's no separate deploy
+job here. Each of the other two repos has its own equivalent
+`.github/workflows/ci.yml`; see their READMEs for what those do. Free and
+unlimited for public repos.
 
 ## Environments
 
