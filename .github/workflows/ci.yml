@@ -1,8 +1,7 @@
 name: CI
 
 # Validates the CloudFormation template and smoke-tests it against a real
-# LocalStack (GitHub's runners have Docker preinstalled). Replaces the
-# cloud Jenkins — see jenkins-cloud/README.md.
+# LocalStack (GitHub's runners have Docker preinstalled).
 on:
   push:
     branches: ['**']

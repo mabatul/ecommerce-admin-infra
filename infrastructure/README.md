@@ -37,7 +37,7 @@ copied by hand from one repo to another.
 Usually not needed — `docker compose up` (see this repo's root README)
 does it for `local` automatically via
 [`../scripts/localstack-init.sh`](../scripts/localstack-init.sh). To deploy
-by hand (debugging, or `dev`/`prod` from Jenkins):
+by hand (debugging, or `dev`/`prod`):
 
 ```bash
 ENVIRONMENT=local ./scripts/deploy-infrastructure.sh

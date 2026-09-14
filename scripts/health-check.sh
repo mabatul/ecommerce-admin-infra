@@ -1,12 +1,8 @@
 #!/usr/bin/env bash
 # Smoke-checks every piece of the local stack after `docker compose up`.
-#
-# HEALTH_CHECK_HOST defaults to "localhost", which is correct when this
-# script runs on your machine (published ports are reachable there). When
-# it runs INSIDE the Jenkins container (Docker-outside-of-Docker — see
-# jenkins/README.md), "localhost" would mean Jenkins' own container, not
-# the host where the published ports actually are — the Jenkinsfile sets
-# HEALTH_CHECK_HOST=host.docker.internal for that case.
+# HEALTH_CHECK_HOST defaults to "localhost" (correct when run on your own
+# machine); override it if the checker itself runs inside a container that
+# needs a different route to the published ports.
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 

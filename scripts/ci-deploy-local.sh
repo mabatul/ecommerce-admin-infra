@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Infra smoke test: brings up LocalStack, and the backend too if its
-# sibling folder exists. Uses plain `docker` (not compose) since Jenkins'
-# Docker-outside-of-Docker setup can't resolve relative bind-mounts.
+# Infra smoke test (used by CI): brings up LocalStack, and the backend too
+# if its sibling folder exists. Uses plain `docker` (not compose) so it
+# doesn't depend on relative bind-mounts resolving on the CI runner.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
@@ -101,9 +101,9 @@ health_check() {
 
 CMD="${1:-infra}"
 
-# No Docker daemon (e.g. cloud Jenkins) is expected, not an error.
+# No Docker daemon here is a valid state, not an error — skip gracefully.
 if ! command -v docker >/dev/null 2>&1; then
-  echo "[ci-deploy-local] no Docker daemon available here — skipping '${CMD}' (expected on a Docker-less Jenkins agent)."
+  echo "[ci-deploy-local] no Docker daemon available here — skipping '${CMD}'."
   exit 0
 fi
 

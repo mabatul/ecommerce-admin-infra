@@ -9,8 +9,8 @@ the ecommerce-admin project:
 
 - **ecommerce-admin-infra** (this repo) — infrastructure only. No
   application code. Defines the CloudFormation template (DynamoDB, S3, IAM,
-  SSM), the LocalStack setup (`docker-compose.yml`, LocalStack only),
-  deployment scripts, and Jenkins.
+  SSM), the LocalStack setup (`docker-compose.yml`, LocalStack only), and
+  deployment scripts.
 - **ecommerce-admin-backend** — Next.js API. Lives in a sibling folder,
   `../ecommerce-admin-backend`. Starts on its own, with its own
   `docker-compose.yml`.
@@ -19,12 +19,10 @@ the ecommerce-admin project:
 
 They're meant to be cloned as sibling directories, but this repo's
 `docker-compose.yml` does **not** build or reference the other two — it
-only brings up LocalStack. `docker-compose.jenkins.yml` still mounts the
-sibling repos (read-only, for the Jenkins jobs), and
-`scripts/ci-deploy-local.sh` still references
-`../ecommerce-admin-backend` for its optional CI smoke test — those are the
-only two places this repo knows the siblings exist, and both are CI/tooling
-concerns, not runtime orchestration.
+only brings up LocalStack. `scripts/ci-deploy-local.sh` is the only place
+this repo knows a sibling exists (`../ecommerce-admin-backend`, for its
+optional CI smoke test), and that's a CI/tooling concern, not runtime
+orchestration.
 
 ## Key design decisions (don't undo these without a reason)
 
@@ -49,17 +47,12 @@ concerns, not runtime orchestration.
   `docs/RAILWAY.md` and `scripts/railway-dynamodb-init.sh`. DynamoDB Local
   doesn't understand CloudFormation/IAM/SSM, so `dev` tables are created by
   a plain AWS-CLI script, not by the shared template.
-- **One Jenkins instance, one job per repo — not one shared pipeline.**
-  Each repo has its own `Jenkinsfile` and deploys independently, with its
-  own Railway credentials/parameters. See `jenkins/README.md`. Don't merge
-  the three Jenkinsfiles back into one.
-- **Docker-outside-of-Docker for the local Jenkins.** Jenkins here talks to
-  the *host's* Docker daemon via a mounted socket. That means relative
-  bind-mounts (like the normal `docker-compose.yml` uses) don't resolve
-  correctly from inside a Jenkins-triggered build — `scripts/ci-deploy-local.sh`
-  works around this by building images that bake the code in with `COPY`
-  (`docker/Dockerfile.localstack`, and the sibling repos'
-  `Dockerfile.ci`) instead of mounting it.
+- **Each repo's CI deploys independently, via GitHub Actions.** No shared
+  pipeline — each repo has its own `.github/workflows/ci.yml` and its own
+  Railway credentials/parameters. `scripts/ci-deploy-local.sh` builds images
+  that bake the code in with `COPY` (`docker/Dockerfile.localstack`, and the
+  sibling repos' `Dockerfile.ci`) rather than bind-mounting it, so the smoke
+  test doesn't depend on the CI runner's filesystem layout.
 - **No app logic knows about AWS vs. LocalStack vs. Railway.** That
   distinction lives entirely in environment variables
   (`AWS_ENDPOINT_URL` etc.), resolved in
@@ -81,4 +74,3 @@ concerns, not runtime orchestration.
 - `infrastructure/README.md` — what the CloudFormation template creates.
 - `docs/LOCALSTACK.md` — per-service LocalStack parity notes.
 - `docs/RAILWAY.md` — DynamoDB Local on Railway, step by step.
-- `jenkins/README.md` — local Jenkins setup, one job per repo.

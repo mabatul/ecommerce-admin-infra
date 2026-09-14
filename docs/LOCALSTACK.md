@@ -11,7 +11,7 @@ AWS. Update it whenever a gap actually bites us during development.
 | **CloudFormation** | Yes | LocalStack Community supports the resource types this template uses (`DynamoDB::Table`, `S3::Bucket`, `IAM::Role`, `SSM::Parameter`). Drift detection, change sets, and stack policies are limited/absent — we only use `cloudformation deploy`, which is supported. |
 | **IAM** | Yes (create-only) | Roles/policies are created and stored, but LocalStack Community **does not enforce** the policy document against API calls made with LocalStack's test credentials — anything succeeds regardless of the attached policy. Treat the `BackendExecutionRole` policy as the real, authoritative least-privilege definition; verify it actually restricts access **against real AWS**, not against LocalStack, before trusting it. |
 | **SSM** | Yes | Parameter Store (`GetParameter`/`PutParameter`) works as expected for the simple String parameters this project uses. |
-| **EC2** | No (AWS-only) | Only appears in the real-AWS deployment diagram. Not part of local dev — the backend runs as a Docker container instead. Will need its own validation pass against real AWS when the EC2/Jenkins deployment path is built out. |
+| **EC2** | No (AWS-only) | Only appears in the real-AWS deployment diagram. Not part of local dev — the backend runs as a Docker container instead. Will need its own validation pass against real AWS if an EC2 deployment path is ever built out. |
 
 ## General rule
 

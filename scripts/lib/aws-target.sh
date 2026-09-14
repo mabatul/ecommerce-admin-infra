@@ -6,8 +6,8 @@
 #   ENVIRONMENT=local        -> commands run inside the localstack container
 #                                (docker compose exec), via awslocal
 #   ENVIRONMENT=dev|prod     -> commands run against real AWS via the host
-#                                `aws` CLI (credentials from the environment /
-#                                Jenkins, never hardcoded here)
+#                                `aws` CLI (credentials from the environment,
+#                                never hardcoded here)
 
 ENVIRONMENT="${ENVIRONMENT:-local}"
 PROJECT_NAME="${PROJECT_NAME:-ecommerce-admin}"

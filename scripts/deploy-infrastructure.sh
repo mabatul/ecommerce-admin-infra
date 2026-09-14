@@ -5,7 +5,7 @@
 #
 # Usage:
 #   ENVIRONMENT=local ./scripts/deploy-infrastructure.sh
-#   ENVIRONMENT=dev   ./scripts/deploy-infrastructure.sh   (run from Jenkins)
+#   ENVIRONMENT=dev   ./scripts/deploy-infrastructure.sh
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 source scripts/lib/aws-target.sh

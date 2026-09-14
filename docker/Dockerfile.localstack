@@ -1,9 +1,7 @@
 # LocalStack with infrastructure/ and the init script baked into the image
-# (COPY) instead of bind-mounted, for the same reason as backend/frontend's
-# Dockerfile.ci: under Docker-outside-of-Docker (Jenkins running inside a
-# container) the host's relative paths aren't visible to the real daemon,
-# so a bind-mount like "./infrastructure:/infrastructure" doesn't resolve
-# correctly. Baking the content in avoids the problem.
+# (COPY) instead of bind-mounted, same reasoning as backend/frontend's
+# Dockerfile.ci — self-contained, doesn't depend on the CI runner's
+# filesystem layout for a bind-mount to resolve correctly.
 #
 # Build with context = repo root:
 #   docker build -f docker/Dockerfile.localstack -t <tag> .
