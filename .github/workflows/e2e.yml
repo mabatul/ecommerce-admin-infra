@@ -1,0 +1,119 @@
+name: E2E
+
+# Brings up the whole stack on the runner (LocalStack, backend, admin dashboard, storefront)
+# and drives it in a real browser with the scripts in e2e/. Run it by hand to check feature
+# branches of the other repos before merging them, or let it run when the tests change.
+on:
+  workflow_dispatch:
+    inputs:
+      backend_ref:
+        description: Branch, tag or SHA of ecommerce-admin-backend
+        default: main
+      admin_ref:
+        description: Branch, tag or SHA of ecommerce-admin-frontend
+        default: main
+      storefront_ref:
+        description: Branch, tag or SHA of ecommerce-storefront
+        default: main
+  pull_request:
+    paths:
+      - 'e2e/**'
+      - '.github/workflows/e2e.yml'
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Not a secret: a throwaway key for a stack that only exists for this run.
+      ADMIN_KEY: ci-admin-key
+      ENVIRONMENT: local
+      PROJECT_NAME: ecommerce-admin
+      AWS_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://localhost:4566
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: mabatul/ecommerce-admin-backend
+          ref: ${{ inputs.backend_ref || 'main' }}
+          path: apps/backend
+      - uses: actions/checkout@v4
+        with:
+          repository: mabatul/ecommerce-admin-frontend
+          ref: ${{ inputs.admin_ref || 'main' }}
+          path: apps/admin
+      - uses: actions/checkout@v4
+        with:
+          repository: mabatul/ecommerce-storefront
+          ref: ${{ inputs.storefront_ref || 'main' }}
+          path: apps/storefront
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: LocalStack and the CloudFormation stack
+        run: ./scripts/deploy-local.sh
+
+      - name: Backend (build, seed, start)
+        working-directory: apps/backend
+        env:
+          BACKEND_PORT: '4000'
+          ADMIN_API_KEY: ${{ env.ADMIN_KEY }}
+        run: |
+          npm ci
+          npm run build
+          npm run seed
+          nohup npx next start -p 4000 > "$GITHUB_WORKSPACE/backend.log" 2>&1 &
+
+      - name: Admin dashboard (build, start)
+        working-directory: apps/admin
+        run: |
+          npm ci
+          npm run build
+          nohup npx next start -p 3000 > "$GITHUB_WORKSPACE/admin.log" 2>&1 &
+
+      - name: Storefront (build, start)
+        working-directory: apps/storefront
+        run: |
+          npm ci
+          npm run build
+          nohup npx next start -p 3001 > "$GITHUB_WORKSPACE/storefront.log" 2>&1 &
+
+      - name: Wait for everything
+        run: |
+          for url in http://localhost:4000/api/health http://localhost:3000/login http://localhost:3001/health; do
+            for i in $(seq 1 45); do
+              curl -sf -o /dev/null "$url" && echo "up: $url" && break
+              [ "$i" = 45 ] && { echo "never came up: $url"; exit 1; }
+              sleep 2
+            done
+          done
+
+      - name: Install the browser
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Browser tests
+        working-directory: e2e
+        env:
+          ADMIN_URL: http://localhost:3000
+          SHOP_URL: http://localhost:3001
+          API_URL: http://localhost:4000
+        run: npm run all
+
+      - name: Logs (on failure)
+        if: failure()
+        run: |
+          for f in backend admin storefront; do echo "=== $f.log"; tail -n 40 "$f.log" 2>/dev/null || true; done
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v || true

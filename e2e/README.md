@@ -37,4 +37,14 @@ be re-run and are safe against a shared environment — but they do write real
 rows, so think twice before pointing them at anything you don't want to
 touch. Exit code is non-zero when any check fails.
 
-Not part of CI: they need the whole stack and a browser download.
+## In CI
+
+`.github/workflows/e2e.yml` builds and starts the whole stack on a GitHub runner (LocalStack,
+backend, dashboard, storefront) and runs `npm run all`. It isn't part of the regular push CI
+because it's slow (~10 min), so it runs when these tests change and **on demand** from the
+Actions tab: *Run workflow* lets you point it at a branch of each app, which is how to check a
+feature branch against the rest of the system before merging it:
+
+```bash
+gh workflow run e2e.yml -R mabatul/ecommerce-admin-infra   -f backend_ref=my-branch -f admin_ref=main -f storefront_ref=main
+```
