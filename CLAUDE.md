@@ -4,7 +4,7 @@ Context for Claude Code (or any AI assistant) working in this repo.
 
 ## What this repo is
 
-`ecommerce-admin-infra` is one of **three independent repos** that make up
+`ecommerce-admin-infra` is one of **four independent repos** that make up
 the ecommerce-admin project:
 
 - **ecommerce-admin-infra** (this repo) — infrastructure only. No
@@ -14,11 +14,13 @@ the ecommerce-admin project:
 - **ecommerce-admin-backend** — Next.js API. Lives in a sibling folder,
   `../ecommerce-admin-backend`. Starts on its own, with its own
   `docker-compose.yml`.
-- **ecommerce-admin-frontend** — Next.js dashboard. Lives in a sibling
+- **ecommerce-admin-frontend** — Next.js admin dashboard. Lives in a sibling
   folder, `../ecommerce-admin-frontend`. Same — starts on its own.
+- **ecommerce-storefront** — Next.js customer shop. Lives in a sibling
+  folder, `../ecommerce-storefront`. Same — starts on its own.
 
 They're meant to be cloned as sibling directories, but this repo's
-`docker-compose.yml` does **not** build or reference the other two — it
+`docker-compose.yml` does **not** build or reference the other repos — it
 only brings up LocalStack. `scripts/ci-deploy-local.sh` is the only place
 this repo knows a sibling exists (`../ecommerce-admin-backend`, for its
 optional CI smoke test), and that's a CI/tooling concern, not runtime
@@ -37,6 +39,13 @@ orchestration.
   exec`, for the same reason. Don't reintroduce `backend`/`frontend`
   services into this repo's `docker-compose.yml` — that's exactly the
   coupling this split was meant to remove.
+- **One DynamoDB table per entity, on purpose.** The IAM policy, the
+  CloudFormation template, the Railway init script and the backend's
+  repositories all assume it. Extra attributes are free (optional fields);
+  changing keys/indexes means touching all of those and Railway's tables.
+  `docs/DATA_MODEL.md` is the source of truth for keys, indexes, access
+  patterns and the pagination/search decisions — keep it in sync when the
+  model changes.
 - **One CloudFormation template, no forking per environment.** The same
   `infrastructure/cloudformation/main.yaml` deploys to LocalStack (`local`)
   and real AWS (`prod`), parameterized by `Environment`. If LocalStack can't
@@ -59,18 +68,19 @@ orchestration.
   `ecommerce-admin-backend/lib/aws/config.ts`. Don't add
   environment-specific branches anywhere else.
 
-## Conventions across all three repos
+## Conventions across all repos
 
 - Documentation (README, docs/*) and code comments: **English**, even
   though conversations about this project may happen in Spanish.
-- Commit messages: plain-language summaries of what changed (not
-  Conventional Commits prefixes like `feat:`/`chore:`).
+- Commit messages: Conventional Commits (`feat:`, `fix:`, `refactor:`,
+  `test:`, `docs:`, `chore:`), in English, saying what changed and why.
 - Don't fabricate commit timestamps/history to make automated work look
   like it happened incrementally over time it didn't.
 
 ## Where to look for more detail
 
-- `README.md` — architecture overview, how to bring up all three services locally.
+- `README.md` — architecture overview, how to bring up all the services locally.
 - `infrastructure/README.md` — what the CloudFormation template creates.
 - `docs/LOCALSTACK.md` — per-service LocalStack parity notes.
 - `docs/RAILWAY.md` — DynamoDB Local on Railway, step by step.
+- `docs/DATA_MODEL.md` — tables, keys, indexes, access patterns, pagination and search.

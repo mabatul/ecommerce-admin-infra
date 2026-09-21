@@ -44,11 +44,44 @@ AWS_REGION=us-east-1
 AWS_ENDPOINT_URL=<internal-or-public-url-of-the-dynamodb-local-service>
 AWS_ACCESS_KEY_ID=local
 AWS_SECRET_ACCESS_KEY=local
+ADMIN_API_KEY=<a long random secret>
 ```
+
+`ADMIN_API_KEY` is **required** outside `ENVIRONMENT=local`: without it every
+admin route answers `503`. Generate something long and random (for example
+`openssl rand -base64 32`), keep it only in Railway's variables and a password
+manager, and type it into the admin dashboard's sign-in page. The public
+storefront routes don't use it.
 
 Nothing else changes — it's exactly the same mechanism as `local`
 (`AWS_ENDPOINT_URL` pointing at a simulator instead of real AWS), just that
 here the simulator lives on Railway instead of your local Docker.
+
+## 4. Add the storefront service
+
+The customer shop is a separate Railway service in the **same project**:
+
+1. **New** → **GitHub Repo** → `ecommerce-storefront`, named
+   `ecommerce-storefront` (the CI's `--service` flag uses that name).
+2. Variables: `NEXT_PUBLIC_API_URL=<the backend's public URL>` (also set as
+   the `NEXT_PUBLIC_API_URL` *repository variable* on GitHub, because it is
+   baked into the build). Optionally `API_URL=<the backend's private URL>` so
+   server-side rendering stays on Railway's private network.
+3. **Settings → Networking → Generate Domain** for the public URL.
+
+The storefront needs no secrets. The health check is `/health`, which does
+not call the backend.
+
+## Rollout order when adding the admin key
+
+The admin dashboard and the backend deploy independently, so order matters or
+the live dashboard is locked out:
+
+1. Deploy the admin dashboard (it sends the key when one is stored; harmless
+   against a backend that doesn't check yet).
+2. Set `ADMIN_API_KEY` on the backend service in Railway.
+3. Deploy the backend.
+4. Open the dashboard and sign in with the key.
 
 ## Differences to keep in mind
 

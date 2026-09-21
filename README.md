@@ -1,21 +1,26 @@
 # ecommerce-admin-infra
 
 Infrastructure and architecture documentation for the **ecommerce-admin**
-admin panel. This repo has no application code — it defines how the
-infrastructure (DynamoDB, S3, IAM, SSM) is created and how the project's
-other two repos connect to each other.
+e-commerce application (customer storefront + admin dashboard). This repo has
+no application code — it defines how the infrastructure (DynamoDB, S3, IAM,
+SSM) is created, documents the data model, and explains how the project's
+other repos connect to each other.
 
-## The three repos
+## The repos
 
 | Repo | Contents |
 |---|---|
-| **ecommerce-admin-infra** (this one) | CloudFormation, LocalStack, deployment scripts, local dev docker-compose, architecture docs |
-| [ecommerce-admin-backend](../ecommerce-admin-backend) | Next.js API. Reads/writes the DynamoDB tables defined here via environment variables — no infrastructure config hardcoded |
-| [ecommerce-admin-frontend](../ecommerce-admin-frontend) | Next.js dashboard. Consumes the backend's API over HTTP; never talks to AWS/LocalStack directly |
+| **ecommerce-admin-infra** (this one) | CloudFormation, LocalStack, deployment scripts, local dev docker-compose, architecture and data-model docs |
+| [ecommerce-admin-backend](../ecommerce-admin-backend) | Next.js API with the business rules. Public storefront routes (`/api/store/*`) and admin routes protected by an admin key. Reads/writes the DynamoDB tables defined here via environment variables — no infrastructure config hardcoded |
+| [ecommerce-storefront](../ecommerce-storefront) | Customer-facing shop: browse, search, filter, product pages, cart, wishlist. Talks only to the backend's public routes |
+| [ecommerce-admin-frontend](../ecommerce-admin-frontend) | Admin dashboard: manage products, categories, users, carts and wishlists. Consumes the backend's admin API; never talks to AWS/LocalStack directly |
+
+The DynamoDB tables, keys, indexes, access patterns and pagination/search
+decisions are documented in [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md).
 
 ![Architecture diagram](docs/architecture.png)
 
-*(Editable source: [`docs/architecture.drawio`](docs/architecture.drawio) — open it at [app.diagrams.net](https://app.diagrams.net).)*
+*(Editable source: [`docs/architecture.drawio`](docs/architecture.drawio) — open it at [app.diagrams.net](https://app.diagrams.net). Shows the admin path; the storefront reaches the same backend the same way the dashboard does.)*
 
 The backend never knows whether it's talking to LocalStack, DynamoDB Local
 on Railway, or real AWS — it's all driven by a single environment variable,
@@ -32,13 +37,14 @@ No AWS CLI or AWS account needed for local development.
 ## Bringing up the full local environment
 
 Each repo starts **independently** — this repo doesn't build or start
-backend/frontend, and they don't know how infra is built. Clone the 3 repos
-as sibling folders:
+the apps, and they don't know how infra is built. Clone the 4 repos as
+sibling folders:
 
 ```bash
 git clone <infra-url> ecommerce-admin-infra
 git clone <backend-url> ecommerce-admin-backend
 git clone <frontend-url> ecommerce-admin-frontend
+git clone <storefront-url> ecommerce-storefront
 ```
 
 **1. Infrastructure first**, from `ecommerce-admin-infra`:
@@ -62,30 +68,40 @@ docker compose up
 Reaches LocalStack via `host.docker.internal:4566` (see that repo's
 README). Once up: http://localhost:4000/api/health.
 
-**3. Frontend**, independently, from `ecommerce-admin-frontend`:
+**3. Admin dashboard**, independently, from `ecommerce-admin-frontend`:
 
 ```bash
 docker compose up
 ```
 
-Once up: http://localhost:3000.
+Once up: http://localhost:3000. It asks for the admin key; against a local
+backend with no `ADMIN_API_KEY` set, any value works (see the backend README).
 
-**4. Load sample data**, back in `ecommerce-admin-infra` (needs the backend
-container from step 2 running):
+**4. Storefront**, independently, from `ecommerce-storefront`:
+
+```bash
+docker compose up
+```
+
+Once up: http://localhost:3001.
+
+**5. Load sample data**, back in `ecommerce-admin-infra` (needs the backend
+container from step 2 running): 5 categories and 15 products with images,
+plus a sample cart and wishlist.
 
 ```bash
 ./scripts/seed-local.sh
 ```
 
 **Shortcut for step 1** (start LocalStack + wait for the stack, nothing
-more — steps 2-4 are still separate, on purpose):
+more — steps 2-5 are still separate, on purpose):
 
 ```bash
 ./scripts/deploy-local.sh
 ```
 
-Verify everything is responding (checks all three, wherever they were
-started from):
+Verify everything is responding (checks LocalStack, backend, dashboard and
+storefront, wherever they were started from):
 
 ```bash
 ./scripts/health-check.sh
