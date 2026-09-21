@@ -125,7 +125,7 @@ branch, and on every pull request into `main`. Single job, `validate`:
 
 This repo has nothing to deploy anywhere — it's infrastructure-as-code, not
 a running service — so, unlike backend/frontend, there's no separate deploy
-job here. Each of the other two repos has its own equivalent
+job here. The other repos each have their own equivalent
 `.github/workflows/ci.yml`; see their READMEs for what those do. Free and
 unlimited for public repos.
 
