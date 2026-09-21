@@ -74,13 +74,17 @@ not call the backend.
 
 ## Rollout order when adding the admin key
 
-The admin dashboard and the backend deploy independently, so order matters or
-the live dashboard is locked out:
+The admin dashboard and the backend deploy independently, but neither works
+with the other's *old* version: a backend from before the key existed doesn't
+allow the `Authorization` header in CORS (so the new dashboard is blocked by
+the browser), and the new backend answers `401` to the old dashboard. Move
+them together, backend first:
 
-1. Deploy the admin dashboard (it sends the key when one is stored; harmless
-   against a backend that doesn't check yet).
-2. Set `ADMIN_API_KEY` on the backend service in Railway.
-3. Deploy the backend.
+1. Set `ADMIN_API_KEY` on the backend service in Railway (harmless to the old
+   code; it just redeploys).
+2. Deploy the backend.
+3. Deploy the admin dashboard straight after. Until it's live the old
+   dashboard gets `401`s — a few minutes of downtime.
 4. Open the dashboard and sign in with the key.
 
 ## Differences to keep in mind
