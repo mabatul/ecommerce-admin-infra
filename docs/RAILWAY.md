@@ -12,11 +12,20 @@ another Docker service inside the Railway project.
 2. Image: `amazon/dynamodb-local:latest`.
 3. Port: `8000` (the one the image exposes).
 4. Suggested name: `dynamodb-local`.
-5. Generate a public domain (or keep it on the project's private network
-   only if the backend lives in the same Railway project — simpler, and it
-   doesn't expose the database to the internet).
+5. **Do not generate a public domain.** DynamoDB Local has no authentication:
+   anyone who can reach it can read and overwrite every table. Keep it on the
+   project's private network and point the backend at its internal address.
 
 ## 2. Create the tables
+
+**Automatic:** the backend's `railway.json` runs `npm run init-tables` as a
+pre-deploy command on every deploy. It runs inside the private network and
+creates any missing table, so you don't need to expose the database to do it.
+Deploying the backend (after the variables in step 3 are set) is enough. If
+DynamoDB Local restarts it comes back empty; the next backend deploy recreates
+the tables (and you re-seed the data).
+
+**Manual alternative**, only if you need to do it by hand:
 
 DynamoDB Local doesn't understand CloudFormation/IAM/SSM — only the
 DynamoDB API. Tables are created with
