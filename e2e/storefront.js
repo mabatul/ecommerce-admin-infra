@@ -18,8 +18,9 @@ const admin = (path, init = {}) =>
 
 // Wait out Next's streaming swap (hidden template copies of the content) before querying the DOM.
 async function go(p, url) {
-  await p.goto(url);
+  const response = await p.goto(url);
   await p.waitForFunction(() => !document.querySelector('div[hidden][id^="S:"]'), null, { timeout: 10000 }).catch(() => {});
+  return response;
 }
 
 const cartBadge = (page) => page.locator('a[aria-label^="Cart,"]').getAttribute("aria-label");
@@ -248,13 +249,18 @@ const card = (page, name) => page.locator("article", { has: page.locator(`a:text
   check("…and recovers on retry", true);
 
   // ---------- not found + category page ----------
-  await go(page, SHOP + "/products/does-not-exist");
+  const realProduct = await go(page, SHOP + "/products/prod-004");
+  check("a real product answers HTTP 200", realProduct.status() === 200, `got ${realProduct.status()}`);
+  const missingProduct = await go(page, SHOP + "/products/does-not-exist");
   await page.waitForSelector("text=We couldn't find that");
   check("unknown product shows a not-found page", true);
-  await go(page, SHOP + "/categories/does-not-exist");
+  check("…and answers HTTP 404, not 200", missingProduct.status() === 404, `got ${missingProduct.status()}`);
+  const missingCategory = await go(page, SHOP + "/categories/does-not-exist");
   await page.waitForSelector("text=We couldn't find that");
   check("unknown category shows a not-found page", true);
-  await go(page, SHOP + "/categories/cat-books");
+  check("…and answers HTTP 404, not 200", missingCategory.status() === 404, `got ${missingCategory.status()}`);
+  const realCategory = await go(page, SHOP + "/categories/cat-books");
+  check("a real category answers HTTP 200", realCategory.status() === 200, `got ${realCategory.status()}`);
   await page.waitForSelector("h1:text('Books')");
   await page.waitForSelector("article");
   check("category page lists only that category", (await page.locator("article").count()) === 3);

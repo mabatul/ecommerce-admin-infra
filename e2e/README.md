@@ -9,7 +9,7 @@ covers the API contract).
 |---|---|
 | `admin-login.js` | Admin sign-in gate: redirect to `/login`, wrong/right key, sign-out, a key rejected mid-session, product form validation and product creation with an image |
 | `admin-crud.js` | Categories, products (incl. stock update), users (details, inline edit), carts and wishlists: create / edit / delete with confirmations, the "category in use" refusal, guest carts, cascade on user delete |
-| `storefront.js` | Home, search, filters and pagination, product pages, cart rules (merge, stock ceiling, subtotal), wishlist, deleted/unavailable products, empty/error/not-found states, mobile overflow |
+| `storefront.js` | Home, search, filters and pagination, product pages, cart rules (merge, stock ceiling, subtotal), wishlist, deleted/unavailable products, empty/error/not-found states (missing products and categories answer HTTP 404), mobile overflow |
 
 ## Running them
 
