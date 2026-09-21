@@ -8,6 +8,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 HOST="${HEALTH_CHECK_HOST:-localhost}"
 FRONTEND_PORT="${FRONTEND_PORT:-3000}"
+STOREFRONT_PORT="${STOREFRONT_PORT:-3001}"
 BACKEND_PORT="${BACKEND_PORT:-4000}"
 FAIL=0
 
@@ -24,7 +25,8 @@ check() {
 echo "[health-check] checking local stack (host: ${HOST})..."
 check "LocalStack"    "http://${HOST}:4566/_localstack/health"
 check "Backend API"   "http://${HOST}:${BACKEND_PORT}/api/health"
-check "Frontend"      "http://${HOST}:${FRONTEND_PORT}"
+check "Admin"         "http://${HOST}:${FRONTEND_PORT}"
+check "Storefront"    "http://${HOST}:${STOREFRONT_PORT}/health"
 
 if [ "$FAIL" -ne 0 ]; then
   echo "[health-check] one or more checks failed."
