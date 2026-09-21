@@ -20,10 +20,9 @@ decisions are documented in [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md).
 
 ![Architecture diagram](docs/architecture.png)
 
-*(Editable source: [`docs/architecture.drawio`](docs/architecture.drawio) — open it at [app.diagrams.net](https://app.diagrams.net). Shows the admin path; the storefront reaches the same backend the same way the dashboard does.)*
+*(Editable source: [`docs/architecture.drawio`](docs/architecture.drawio) — open it at [app.diagrams.net](https://app.diagrams.net). The first page is the diagram above; the other pages are earlier versions.)*
 
-The whole application, including the storefront (the image above shows only the
-admin path):
+The same application as a request-flow diagram (what runs inside the backend):
 
 ```mermaid
 flowchart LR
