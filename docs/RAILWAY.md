@@ -25,9 +25,10 @@ database to do it. The backend's `railway.json` declares it too, but Railway
 doesn't apply `railway.json` to a service that already exists — set it in the
 service settings, then trigger a *new* deployment (a plain "redeploy" replays
 the old settings).
-Deploying the backend (after the variables in step 3 are set) is enough. If
-DynamoDB Local restarts it comes back empty; the next backend deploy recreates
-the tables (and you re-seed the data).
+Deploying the backend (after the variables in step 3 are set) is enough. The
+data survives restarts if you attach a volume (see
+[Persistence](#persistence)); without one, a restart leaves the database empty
+and the next backend deploy recreates the tables, after which you re-seed.
 
 **Manual alternative**, only if you need to do it by hand:
 
@@ -108,13 +109,36 @@ them together, backend first:
    dashboard gets `401`s — a few minutes of downtime.
 4. Open the dashboard and sign in with the key.
 
+## Persistence
+
+Left alone, `dynamodb-local` writes its database file inside the container's own
+filesystem, so every restart or redeploy wipes the data. To keep it, on the
+`dynamodb-local` service:
+
+1. Attach a **volume** mounted at `/data`.
+2. Set the variable `RAILWAY_RUN_UID=0` (the image runs as a non-root user, which
+   cannot write to a freshly mounted volume).
+3. Set the start command to
+   `java -jar DynamoDBLocal.jar -sharedDb -dbPath /data`.
+
+Tables are created by the backend's pre-deploy command, and the sample data is
+loaded with the seed script through the admin API (the database itself is only
+reachable from inside the private network):
+
+```bash
+cd ecommerce-admin-backend
+API_URL=https://<backend-domain> ADMIN_API_KEY=<key> npm run seed:remote
+```
+
+It is idempotent, so it is also the way to restore the sample data after
+changing it in the dashboard.
+
 ## Differences to keep in mind
 
-- No guaranteed persistence unless you attach a volume to `dynamodb-local`
-  on Railway — by default it keeps data in memory and loses everything on
-  container restart. If `dev` needs real persistence, add a volume and run
-  the image with `-dbPath` (see the
-  [image's README](https://hub.docker.com/r/amazon/dynamodb-local)).
+- A single volume-backed container is not a production database: no
+  replication, no backups, and downtime while it restarts. Fine for `dev`;
+  real AWS (via [`../infrastructure/cloudformation/main.yaml`](../infrastructure/cloudformation/main.yaml))
+  is the answer for `prod`.
 - No S3, IAM, or SSM simulated in `dev` — if the backend ever needs one of
   those services in `dev`, it has to be solved separately (Railway has its
   own object storage via plugins, it's not AWS S3).

@@ -151,3 +151,6 @@ DynamoDB has no full-text search. The decision, and its consequences:
   access patterns above are the list of what to index first if that changes.
 - LocalStack and DynamoDB Local don't enforce the IAM policy; see
   [`LOCALSTACK.md`](LOCALSTACK.md).
+- On Railway, DynamoDB Local keeps its data on a volume, so it survives
+  restarts; see [`RAILWAY.md`](RAILWAY.md#persistence). It has no replication
+  or backups.
