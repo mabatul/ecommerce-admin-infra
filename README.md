@@ -22,6 +22,25 @@ decisions are documented in [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md).
 
 *(Editable source: [`docs/architecture.drawio`](docs/architecture.drawio) — open it at [app.diagrams.net](https://app.diagrams.net). Shows the admin path; the storefront reaches the same backend the same way the dashboard does.)*
 
+The whole application, including the storefront (the image above shows only the
+admin path):
+
+```mermaid
+flowchart LR
+  C(["Customer browser"]) --> S["ecommerce-storefront<br/>Next.js"]
+  A(["Admin browser"]) --> D["ecommerce-admin-frontend<br/>Next.js dashboard"]
+  S -->|"/api/store/* (public)"| API
+  D -->|"/api/* + admin key"| API
+
+  subgraph API["ecommerce-admin-backend (Next.js API)"]
+    direction LR
+    RH["Route handlers"] --> VA["Validators (Zod)"] --> SV["Services<br/>business rules"] --> RE["Repositories"]
+  end
+
+  RE -->|"AWS SDK<br/>(AWS_ENDPOINT_URL)"| DB[("DynamoDB")]
+  DB -.- ENV["local: LocalStack<br/>dev: DynamoDB Local on Railway<br/>prod: real AWS"]
+```
+
 The backend never knows whether it's talking to LocalStack, DynamoDB Local
 on Railway, or real AWS — it's all driven by a single environment variable,
 `AWS_ENDPOINT_URL` (empty = real AWS). See
