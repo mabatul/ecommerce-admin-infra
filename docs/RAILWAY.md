@@ -18,9 +18,13 @@ another Docker service inside the Railway project.
 
 ## 2. Create the tables
 
-**Automatic:** the backend's `railway.json` runs `npm run init-tables` as a
-pre-deploy command on every deploy. It runs inside the private network and
-creates any missing table, so you don't need to expose the database to do it.
+**Automatic:** the backend service's **Pre-deploy command** is
+`npm run init-tables` (Settings → Deploy). It runs on every deploy, inside the
+private network, and creates any missing table, so you don't need to expose the
+database to do it. The backend's `railway.json` declares it too, but Railway
+doesn't apply `railway.json` to a service that already exists — set it in the
+service settings, then trigger a *new* deployment (a plain "redeploy" replays
+the old settings).
 Deploying the backend (after the variables in step 3 are set) is enough. If
 DynamoDB Local restarts it comes back empty; the next backend deploy recreates
 the tables (and you re-seed the data).
@@ -66,6 +70,11 @@ Nothing else changes — it's exactly the same mechanism as `local`
 (`AWS_ENDPOINT_URL` pointing at a simulator instead of real AWS), just that
 here the simulator lives on Railway instead of your local Docker.
 
+> **Careful with the CLI:** `railway domain --service dynamodb-local` doesn't
+> just list domains — it **creates** a public one if none exists. Since DynamoDB
+> Local has no authentication, that would expose the whole database. Check
+> domains with the dashboard or a GraphQL `domains` query instead.
+
 ## 4. Add the storefront service
 
 The customer shop is a separate Railway service in the **same project**:
@@ -78,8 +87,11 @@ The customer shop is a separate Railway service in the **same project**:
    server-side rendering stays on Railway's private network.
 3. **Settings → Networking → Generate Domain** for the public URL.
 
-The storefront needs no secrets. The health check is `/health`, which does
-not call the backend.
+The storefront needs no secrets. Its health check is `/health`, which does not
+call the backend; it works because the app listens on the `PORT` Railway
+injects (the backend and dashboard don't, which is why they have no health
+check). For CI deploys, create a **Project Token** (project → Settings →
+Tokens) and store it as the `RAILWAY_TOKEN` secret of the storefront repo.
 
 ## Rollout order when adding the admin key
 
