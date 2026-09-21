@@ -74,6 +74,7 @@ const confirmDialog = async (page, label) => {
   await page.click('button:has-text("Save changes")');
   await page.waitForURL("**/categories");
   await search(page, "E2E Category (edited)");
+  await row(page, "E2E Category (edited)").waitFor(); // the list reloads after the redirect; don't race it
   check("category edited", (await row(page, "E2E Category (edited)").count()) === 1);
 
   await go(page, "/categories/new");
@@ -197,6 +198,7 @@ const confirmDialog = async (page, label) => {
   await confirmDialog(page, "Delete");
   await page.waitForURL("**/users");
   await search(page, "E2E Person");
+  await page.waitForSelector("tbody tr"); // list loaded (the seeded users are still there)
   check("user deleted after confirmation", (await row(page, "E2E Person").count()) === 0);
   const cartGone = await (await api(`/api/carts/${person.userId}`)).json();
   check("deleting a user also removes their cart", cartGone.items.length === 0);
