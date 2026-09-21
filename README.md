@@ -180,6 +180,7 @@ infrastructure/cloudformation/main.yaml   Shared template (local/prod)
 docker/Dockerfile.localstack               LocalStack with the stack baked in
 docker-compose.yml                          LocalStack only — nothing else
 scripts/                                    Deployment, seed, health-check
+e2e/                                        Browser tests (Playwright) for the admin dashboard and the storefront
 .github/workflows/ci.yml                    Real CI: cfn-lint + LocalStack smoke test
 docs/LOCALSTACK.md                          LocalStack parity per service
 docs/RAILWAY.md                             DynamoDB Local on Railway, step by step
