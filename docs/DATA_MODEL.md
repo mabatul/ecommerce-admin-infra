@@ -3,9 +3,8 @@
 How the application's data is stored, and which questions the tables are
 designed to answer. Everything here is created by
 [`infrastructure/cloudformation/main.yaml`](../infrastructure/cloudformation/main.yaml)
-(or, on Railway's DynamoDB Local, by
-[`scripts/railway-dynamodb-init.sh`](../scripts/railway-dynamodb-init.sh) —
-same keys and indexes). The code that reads and writes it lives in
+(or, on Railway's DynamoDB Local, by the backend's `npm run init-tables`
+pre-deploy command — same keys and indexes). The code that reads and writes it lives in
 `ecommerce-admin-backend/lib/repositories/`.
 
 ## Design in one paragraph

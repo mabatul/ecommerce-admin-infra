@@ -152,8 +152,8 @@ unlimited for public repos.
 | Environment | Where compute runs | Where the data lives |
 |---|---|---|
 | `local` | Docker, on your machine | LocalStack (this repo) |
-| `dev` | Railway (backend/frontend repos, each with its own deploy) | DynamoDB Local, as a Docker service on Railway — see below |
-| `prod` | To be defined | Real AWS (same `infrastructure/cloudformation/main.yaml`) |
+| `dev` | Railway (backend, dashboard and storefront, each with its own deploy) | DynamoDB Local, as a Docker service on Railway — see below |
+| `prod` | Not deployed | Real AWS (same `infrastructure/cloudformation/main.yaml`) |
 
 ### `dev`: DynamoDB Local on Railway
 
@@ -166,10 +166,12 @@ the internal URL Railway assigns that service.
 
 Important difference from `local`/`prod`: DynamoDB Local **doesn't**
 understand CloudFormation, IAM, or SSM — it only simulates the DynamoDB
-API. So in `dev` the tables aren't created with
-`infrastructure/cloudformation/main.yaml`, but with
-[`scripts/railway-dynamodb-init.sh`](scripts/railway-dynamodb-init.sh),
-which creates them directly via AWS CLI/SDK. Step-by-step guide:
+API. So in `dev` the tables aren't created from
+`infrastructure/cloudformation/main.yaml`: the backend's pre-deploy command
+(`npm run init-tables`) creates any missing table on every deploy, with the same
+keys and index, and
+[`scripts/railway-dynamodb-init.sh`](scripts/railway-dynamodb-init.sh) does the
+same by hand. The data sits on a persistent volume. Step-by-step guide:
 [`docs/RAILWAY.md`](docs/RAILWAY.md).
 
 ## Structure
